@@ -12,6 +12,9 @@ import com.example.estacionamientofacilapp.ui.screens.RegisterScreen
 import com.example.estacionamientofacilapp.ui.screens.RecoverPasswordScreen
 import com.example.estacionamientofacilapp.ui.screens.ParkingListScreen
 import com.example.estacionamientofacilapp.ui.screens.DashboardScreen
+import com.example.estacionamientofacilapp.ui.screens.ResidentesScreen
+import com.example.estacionamientofacilapp.ui.screens.UsuariosScreen
+import com.example.estacionamientofacilapp.ui.screens.VehiculosEspecialesScreen
 
 @Composable
 fun AppNavigation() {
@@ -37,5 +40,8 @@ fun AppNavigation() {
             PlaceholderScreen(navController, tituloRecibido)
         }
 
+        composable("usuarios_screen") { UsuariosScreen(navController) }
+        composable("residentes_screen") { ResidentesScreen(navController) }
+        composable("vehiculosEspeciales_screen") { VehiculosEspecialesScreen(navController) }
     }
 }

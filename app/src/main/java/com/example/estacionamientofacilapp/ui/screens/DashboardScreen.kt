@@ -32,9 +32,9 @@ fun DashboardScreen(navController: NavController) {
     // Lista de Opciones del Menú
     val menuItems = listOf(
         MenuItem("Entradas / Salidas", Icons.Default.List, "parking_list"),
-        MenuItem("Residentes", Icons.Default.Person, "placeholder/Residentes"),
-        MenuItem("Vehículos Especiales", Icons.Default.Star, "placeholder/Especiales"),
-        MenuItem("Usuarios APP", Icons.Default.Phone, "placeholder/Usuarios"),
+        MenuItem("Residentes", Icons.Default.Person, "residentes_screen"),
+        MenuItem("Vehículos Especiales", Icons.Default.Star, "vehiculosEspeciales_screen"),
+        MenuItem("Usuarios APP", Icons.Default.Phone, "usuarios_screen"),
         MenuItem("Horarios", Icons.Default.DateRange, "placeholder/Horarios"),
         MenuItem("Tarifas", Icons.Default.ShoppingCart, "placeholder/Tarifas")
     )

@@ -23,26 +23,26 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.estacionamientofacilapp.data.ClienteParking
+import com.example.estacionamientofacilapp.data.ResidentesProvider
 import com.example.estacionamientofacilapp.data.listaClientes
+import com.example.estacionamientofacilapp.utils.ejecutarSeguro
+import com.example.estacionamientofacilapp.utils.esPatenteValida
 import com.example.estacionamientofacilapp.utils.formatearPatente
+import com.example.estacionamientofacilapp.utils.validarCamposObligatorios
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-
-// DATOS DE PRUEBA PARA RESIDENTES
-data class ResidenteMock(val nombre: String, val patente: String, val dpto: String)
-val listaResidentes = listOf(
-    ResidenteMock("Juan Pérez", "AA1122", "Dpto 101"),
-    ResidenteMock("Maria Soto", "BB3344", "Dpto 205"),
-    ResidenteMock("Pedro Diaz", "CC5566", "Dpto 303"),
-    ResidenteMock("Ana Torres", "DD7788", "Dpto 410")
-)
 
 enum class TipoDialogo { NINGUNO, SELECCION, LISTA_RESIDENTES, FORMULARIO_VISITA }
 
 @Composable
 fun ParkingListScreen(navController: NavController) {
     val context = LocalContext.current
+    var listaResidentesDelProvider by remember { mutableStateOf(ResidentesProvider.obtenerResidentes()) }
+
+    LaunchedEffect(Unit) {
+        listaResidentesDelProvider = ResidentesProvider.obtenerResidentes()
+    }
 
     var textoBusqueda by remember { mutableStateOf("") }
     var updateTrigger by remember { mutableStateOf(false) }
@@ -51,7 +51,7 @@ fun ParkingListScreen(navController: NavController) {
     // VARIABLES FORMULARIO VISITA
     var nuevoNombre by remember { mutableStateOf("") }
     var nuevaPatente by remember { mutableStateOf("") }
-    var nuevoMotivo by remember { mutableStateOf("") } // CAMPO NUEVO
+    var nuevoMotivo by remember { mutableStateOf("") }
 
     val listaFiltrada = remember(textoBusqueda, listaClientes.size, updateTrigger) {
         listaClientes.filter { cliente ->
@@ -60,6 +60,9 @@ fun ParkingListScreen(navController: NavController) {
         }
     }
 
+    // --- DIÁLOGOS ---
+
+    // 1. SELECCIÓN TIPO DE INGRESO
     if (dialogoActual == TipoDialogo.SELECCION) {
         AlertDialog(
             onDismissRequest = { dialogoActual = TipoDialogo.NINGUNO },
@@ -68,7 +71,10 @@ fun ParkingListScreen(navController: NavController) {
             text = { Text("¿Qué tipo de vehículo ingresa?", color = Color.LightGray, fontSize = 18.sp) },
             confirmButton = {
                 Button(
-                    onClick = { dialogoActual = TipoDialogo.LISTA_RESIDENTES },
+                    onClick = {
+                        listaResidentesDelProvider = ResidentesProvider.obtenerResidentes()
+                        dialogoActual = TipoDialogo.LISTA_RESIDENTES
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF27AE60))
                 ) {
                     Text("RESIDENTE", fontSize = 18.sp)
@@ -85,6 +91,7 @@ fun ParkingListScreen(navController: NavController) {
         )
     }
 
+    // 2. FORMULARIO VISITA
     if (dialogoActual == TipoDialogo.FORMULARIO_VISITA) {
         AlertDialog(
             onDismissRequest = { dialogoActual = TipoDialogo.NINGUNO },
@@ -109,7 +116,6 @@ fun ParkingListScreen(navController: NavController) {
                         )
                     )
                     Spacer(Modifier.height(12.dp))
-
                     OutlinedTextField(
                         value = nuevaPatente,
                         onValueChange = { nuevaPatente = it },
@@ -127,12 +133,11 @@ fun ParkingListScreen(navController: NavController) {
                         )
                     )
                     Spacer(Modifier.height(12.dp))
-
                     OutlinedTextField(
                         value = nuevoMotivo,
                         onValueChange = { nuevoMotivo = it },
                         label = { Text("Motivo de Visita") },
-                        placeholder = { Text("Ej: Entrevista, Delivery...", color = Color.LightGray) },
+                        placeholder = { Text("Ej: Entrevista...", color = Color.LightGray) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = Color.White,
@@ -150,18 +155,23 @@ fun ParkingListScreen(navController: NavController) {
             confirmButton = {
                 Button(
                     onClick = {
-                        if(nuevoNombre.isNotEmpty() && nuevaPatente.isNotEmpty()) {
-                            val hora = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                            val nombreCompleto = if (nuevoMotivo.isNotEmpty()) "$nuevoNombre ($nuevoMotivo)" else nuevoNombre
-
-                            listaClientes.add(0, ClienteParking(nombreCompleto, nuevaPatente, hora, false))
-                            updateTrigger = !updateTrigger
-                            // Limpiar campos
-                            nuevoNombre = ""
-                            nuevaPatente = ""
-                            nuevoMotivo = ""
-                            dialogoActual = TipoDialogo.NINGUNO
-                            Toast.makeText(context, "Visita registrada", Toast.LENGTH_SHORT).show()
+                        val camposValidos = validarCamposObligatorios(listOf(nuevoNombre, nuevaPatente))
+                        if (camposValidos) {
+                            if (nuevaPatente.esPatenteValida) {
+                                val hora = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+                                val nombreCompleto = if (nuevoMotivo.isNotEmpty()) "$nuevoNombre ($nuevoMotivo)" else nuevoNombre
+                                listaClientes.add(0, ClienteParking(nombreCompleto, nuevaPatente, hora, false))
+                                updateTrigger = !updateTrigger
+                                nuevoNombre = ""
+                                nuevaPatente = ""
+                                nuevoMotivo = ""
+                                dialogoActual = TipoDialogo.NINGUNO
+                                Toast.makeText(context, "Visita registrada", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(context, "Patente inválida (Mínimo 6 caracteres)", Toast.LENGTH_SHORT).show()
+                            }
+                        } else {
+                            Toast.makeText(context, "Complete nombre y patente", Toast.LENGTH_SHORT).show()
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF1C40F))
@@ -172,6 +182,7 @@ fun ParkingListScreen(navController: NavController) {
         )
     }
 
+    // 3. LISTA RESIDENTES (Conectada al Provider)
     if (dialogoActual == TipoDialogo.LISTA_RESIDENTES) {
         AlertDialog(
             onDismissRequest = { dialogoActual = TipoDialogo.NINGUNO },
@@ -179,14 +190,16 @@ fun ParkingListScreen(navController: NavController) {
             title = { Text("Seleccionar Residente", color = Color.White, fontSize = 24.sp) },
             text = {
                 LazyColumn(modifier = Modifier.height(300.dp)) {
-                    items(listaResidentes) { residente ->
+                    items(listaResidentesDelProvider) { residente ->
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 4.dp)
                                 .clickable {
                                     val hora = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+
                                     listaClientes.add(0, ClienteParking("${residente.nombre} (${residente.dpto})", residente.patente, hora, true))
+
                                     updateTrigger = !updateTrigger
                                     dialogoActual = TipoDialogo.NINGUNO
                                     Toast.makeText(context, "Residente Ingresado", Toast.LENGTH_SHORT).show()
@@ -200,7 +213,7 @@ fun ParkingListScreen(navController: NavController) {
                                 Column {
                                     Text(residente.nombre, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                                     Text(residente.patente, color = Color(0xFFF1C40F), fontSize = 16.sp)
-                                    Text(residente.dpto, color = Color.LightGray, fontSize = 14.sp)
+                                    Text("Dpto: ${residente.dpto}", color = Color.LightGray, fontSize = 14.sp)
                                 }
                             }
                         }
@@ -215,6 +228,7 @@ fun ParkingListScreen(navController: NavController) {
         )
     }
 
+    // SCAFFOLD PRINCIPAL
     Scaffold(
         bottomBar = {
             Column(
@@ -245,9 +259,7 @@ fun ParkingListScreen(navController: NavController) {
                         Text("SALIDA", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     }
                 }
-
                 Spacer(modifier = Modifier.height(12.dp))
-
                 Button(
                     onClick = { navController.popBackStack() },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF1C40F)),
@@ -269,7 +281,6 @@ fun ParkingListScreen(navController: NavController) {
                 .padding(horizontal = 16.dp)
         ) {
             Spacer(modifier = Modifier.height(16.dp))
-
             Text("Control de Acceso", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 16.dp))
 
             OutlinedTextField(
@@ -308,15 +319,20 @@ fun ParkingCard(cliente: ClienteParking) {
                 Text(text = cliente.nombre, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(6.dp))
 
-                var textoMostrado: String
-                var colorTexto: Color
-                try {
-                    textoMostrado = "Patente: ${cliente.patente.formatearPatente()}"
-                    colorTexto = Color(0xFFF1C40F)
-                } catch (e: Exception) {
-                    textoMostrado = "Error formato"
-                    colorTexto = Color.Red
-                }
+                var textoMostrado = "Cargando..."
+                var colorTexto = Color.Gray
+
+                ejecutarSeguro(
+                    bloque = {
+                        textoMostrado = "Patente: ${cliente.patente.formatearPatente()}"
+                        colorTexto = Color(0xFFF1C40F)
+                    },
+                    onError = {
+                        textoMostrado = "Error formato"
+                        colorTexto = Color.Red
+                    }
+                )
+
                 Text(text = textoMostrado, color = colorTexto, fontWeight = FontWeight.Black, fontSize = 20.sp)
                 Text(text = "Entrada: ${cliente.horaEntrada}", color = Color.LightGray, fontSize = 16.sp)
             }

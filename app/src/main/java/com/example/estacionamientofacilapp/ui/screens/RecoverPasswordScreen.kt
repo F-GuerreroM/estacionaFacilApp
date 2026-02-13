@@ -7,7 +7,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.estacionamientofacilapp.data.usuarios
+import com.example.estacionamientofacilapp.data.UsuariosProvider
 
 @Composable
 fun RecoverPasswordScreen(navController: NavController) {
@@ -36,9 +36,9 @@ fun RecoverPasswordScreen(navController: NavController) {
 
         Button(
             onClick = {
-                val user = usuarios.find { it.username == username }
+                val user = UsuariosProvider.obtenerUsuarios().find { it.nombre == username }
                 mensaje = if (user != null) {
-                    "Tu contraseña es: ${user.password}"
+                    "Tu contraseña es: ${user.clave}"
                 } else {
                     "Usuario no encontrado"
                 }

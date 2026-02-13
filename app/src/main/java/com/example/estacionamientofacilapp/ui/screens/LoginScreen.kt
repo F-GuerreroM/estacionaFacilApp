@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -20,16 +21,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.estacionamientofacilapp.R
-import com.example.estacionamientofacilapp.data.usuarios
+import com.example.estacionamientofacilapp.data.UsuariosProvider
 
 @Composable
 fun LoginScreen(navController: NavController) {
+    val context = LocalContext.current
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
-    val colorFondo = Color(0xFF2C3E50) // Gris
-    val colorAcento = Color(0xFFF1C40F) // Amarillo
-    val colorInputFondo = Color(0xFF34495E) // Gris un poco más claro
+
+    // Colores del tema oscuro
+    val colorFondo = Color(0xFF2C3E50)
+    val colorAcento = Color(0xFFF1C40F)
+    val colorInputFondo = Color(0xFF34495E)
 
     Column(
         modifier = Modifier
@@ -47,14 +51,16 @@ fun LoginScreen(navController: NavController) {
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        Image(
-            painter = painterResource(id = R.drawable.parking_sign_flat_style),
-            contentDescription = "Logo Estacionamiento",
-            modifier = Modifier
-                .size(160.dp)
-                .padding(bottom = 24.dp),
-            contentScale = ContentScale.Fit
-        )
+        Box(contentAlignment = Alignment.Center) {
+            Image(
+                painter = painterResource(id = R.drawable.parking_sign_flat_style),
+                contentDescription = "Logo Estacionamiento",
+                modifier = Modifier
+                    .size(160.dp)
+                    .padding(bottom = 24.dp),
+                contentScale = ContentScale.Fit
+            )
+        }
 
         Card(
             colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
@@ -114,18 +120,14 @@ fun LoginScreen(navController: NavController) {
 
                 Button(
                     onClick = {
-                        try {
-                            val user = usuarios.find { it.username == username && it.password == password }
-                            if (user != null) {
-                                errorMessage = ""
-                                navController.navigate("dashboard") {
-                                    popUpTo("login") { inclusive = true }
-                                }
-                            } else {
-                                throw Exception("Datos incorrectos")
+                        val esValido = UsuariosProvider.validarLogin(username, password)
+                        if (esValido) {
+                            errorMessage = ""
+                            navController.navigate("dashboard") {
+                                popUpTo("login") { inclusive = true }
                             }
-                        } catch (e: Exception) {
-                            errorMessage = e.message ?: "Error"
+                        } else {
+                            errorMessage = "Credenciales incorrectas"
                         }
                     },
                     modifier = Modifier
@@ -144,6 +146,7 @@ fun LoginScreen(navController: NavController) {
         TextButton(onClick = { navController.navigate("register") }) {
             Text("¿No tienes cuenta? CREAR", color = colorAcento, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         }
+
         TextButton(onClick = { navController.navigate("recover") }) {
             Text("Olvidé mi contraseña", color = Color.LightGray, fontSize = 18.sp)
         }
