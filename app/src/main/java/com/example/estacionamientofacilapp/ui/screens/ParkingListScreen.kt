@@ -32,17 +32,24 @@ import com.example.estacionamientofacilapp.utils.validarCamposObligatorios
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.example.estacionamientofacilapp.data.ResidenteApp
 
 enum class TipoDialogo { NINGUNO, SELECCION, LISTA_RESIDENTES, FORMULARIO_VISITA }
 
 @Composable
 fun ParkingListScreen(navController: NavController) {
     val context = LocalContext.current
-    var listaResidentesDelProvider by remember { mutableStateOf(ResidentesProvider.obtenerResidentes()) }
 
-    LaunchedEffect(Unit) {
-        listaResidentesDelProvider = ResidentesProvider.obtenerResidentes()
+    // --- FIREBASE ---
+    var listaResidentesDelProvider by remember { mutableStateOf(emptyList<ResidenteApp>()) }
+
+    DisposableEffect(Unit) {
+        ResidentesProvider.escucharResidentes { datos ->
+            listaResidentesDelProvider = datos
+        }
+        onDispose { }
     }
+    // ----------------------------------
 
     var textoBusqueda by remember { mutableStateOf("") }
     var updateTrigger by remember { mutableStateOf(false) }
@@ -60,9 +67,6 @@ fun ParkingListScreen(navController: NavController) {
         }
     }
 
-    // --- DIÁLOGOS ---
-
-    // 1. SELECCIÓN TIPO DE INGRESO
     if (dialogoActual == TipoDialogo.SELECCION) {
         AlertDialog(
             onDismissRequest = { dialogoActual = TipoDialogo.NINGUNO },
@@ -72,7 +76,6 @@ fun ParkingListScreen(navController: NavController) {
             confirmButton = {
                 Button(
                     onClick = {
-                        listaResidentesDelProvider = ResidentesProvider.obtenerResidentes()
                         dialogoActual = TipoDialogo.LISTA_RESIDENTES
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF27AE60))
@@ -91,7 +94,6 @@ fun ParkingListScreen(navController: NavController) {
         )
     }
 
-    // 2. FORMULARIO VISITA
     if (dialogoActual == TipoDialogo.FORMULARIO_VISITA) {
         AlertDialog(
             onDismissRequest = { dialogoActual = TipoDialogo.NINGUNO },
@@ -182,7 +184,6 @@ fun ParkingListScreen(navController: NavController) {
         )
     }
 
-    // 3. LISTA RESIDENTES (Conectada al Provider)
     if (dialogoActual == TipoDialogo.LISTA_RESIDENTES) {
         AlertDialog(
             onDismissRequest = { dialogoActual = TipoDialogo.NINGUNO },
@@ -228,7 +229,6 @@ fun ParkingListScreen(navController: NavController) {
         )
     }
 
-    // SCAFFOLD PRINCIPAL
     Scaffold(
         bottomBar = {
             Column(

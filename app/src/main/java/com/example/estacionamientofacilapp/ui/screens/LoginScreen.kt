@@ -22,10 +22,29 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.estacionamientofacilapp.R
 import com.example.estacionamientofacilapp.data.UsuariosProvider
+import android.net.Uri
 
 @Composable
 fun LoginScreen(navController: NavController) {
     val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        try {
+
+            val uri = Uri.parse("content://com.example.estacionamientofacilapp.provider")
+            val cursor = context.contentResolver.query(uri, null, null, null, null)
+
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    val mensaje = it.getString(0)
+                    println("ESTACIONAFACIL PROVIDER TEST: $mensaje")
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
@@ -120,14 +139,21 @@ fun LoginScreen(navController: NavController) {
 
                 Button(
                     onClick = {
-                        val esValido = UsuariosProvider.validarLogin(username, password)
-                        if (esValido) {
-                            errorMessage = ""
-                            navController.navigate("dashboard") {
-                                popUpTo("login") { inclusive = true }
-                            }
+                        if (username.isNotEmpty() && password.isNotEmpty()) {
+
+                            UsuariosProvider.login(username, password)
+                                .addOnSuccessListener {
+                                    errorMessage = ""
+                                    navController.navigate("dashboard") {
+                                        popUpTo("login") { inclusive = true }
+                                    }
+                                }
+                                .addOnFailureListener { exception ->
+                                    errorMessage = "Error: ${exception.localizedMessage}"
+                                }
+
                         } else {
-                            errorMessage = "Credenciales incorrectas"
+                            errorMessage = "Complete todos los campos"
                         }
                     },
                     modifier = Modifier

@@ -1,28 +1,48 @@
 package com.example.estacionamientofacilapp.data
 
-// Modelo de Datos (La estructura de la tabla)
-data class ResidenteApp(val id: Int, val nombre: String, val patente: String, val dpto: String)
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 
-// El Provider (Gestor de Datos Singleton)
+data class ResidenteApp(
+    val id: String = "",
+    val nombre: String = "",
+    val patente: String = "",
+    val dpto: String = ""
+)
+
 object ResidentesProvider {
 
-    private val listaResidentes = mutableListOf(
-        ResidenteApp(1, "Juan Pérez", "AA1122", "101"),
-        ResidenteApp(2, "Maria Soto", "BB3344", "205"),
-        ResidenteApp(3, "Pedro Diaz", "CC5566", "303")
-    )
+    private val dbRef = FirebaseDatabase.getInstance().getReference("residentes")
 
-    fun obtenerResidentes(): List<ResidenteApp> = listaResidentes.toList()
+    // ESCUCHAR EN TIEMPO REAL (Read)
+    fun escucharResidentes(onDatosCargados: (List<ResidenteApp>) -> Unit) {
+        dbRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val listaTemp = mutableListOf<ResidenteApp>()
+                for (dato in snapshot.children) {
+                    val residente = dato.getValue(ResidenteApp::class.java)
+                    residente?.let { listaTemp.add(it) }
+                }
+                onDatosCargados(listaTemp)
+            }
 
-    // CREAR (Insert)
-    fun agregarResidente(nombre: String, patente: String, dpto: String) {
-        // Generamos ID único (Máximo actual + 1)
-        val nuevoId = (listaResidentes.maxOfOrNull { it.id } ?: 0) + 1
-        listaResidentes.add(ResidenteApp(nuevoId, nombre, patente, dpto))
+            override fun onCancelled(error: DatabaseError) {
+
+            }
+        })
     }
 
-    // BORRAR (Delete)
-    fun eliminarResidente(residente: ResidenteApp) {
-        listaResidentes.removeAll { it.id == residente.id }
+    // AGREGAR (Create)
+    fun agregarResidente(nombre: String, patente: String, dpto: String) {
+        val id = dbRef.push().key ?: return // Genera ID único (ej: -Msj82...)
+        val nuevoResidente = ResidenteApp(id, nombre, patente, dpto)
+        dbRef.child(id).setValue(nuevoResidente)
+    }
+
+    // ELIMINAR (Delete)
+    fun eliminarResidente(id: String) {
+        dbRef.child(id).removeValue()
     }
 }

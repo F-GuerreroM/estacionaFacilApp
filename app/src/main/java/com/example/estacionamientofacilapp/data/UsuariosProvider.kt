@@ -1,50 +1,55 @@
 package com.example.estacionamientofacilapp.data
 
-// Modelo de datos
-data class UsuarioApp(val id: Int, val nombre: String, val clave: String, val rol: String)
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.AuthResult
+import com.google.android.gms.tasks.Task
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
+
+// MODELO PARA LA BASE DE DATOS
+data class UsuarioApp(
+    val id: String = "",
+    val nombre: String = "",
+    val rol: String = ""
+)
 
 object UsuariosProvider {
 
-    // Lista de usuarios ACTIVOS
-    private val listaUsuarios = mutableListOf(
-        UsuarioApp(1, "admin", "1234", "Administrador"),
-        UsuarioApp(2, "juan", "0000", "Guardia")
-    )
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
-    // Lista de SOLICITUDES
-    private val listaSolicitudes = mutableListOf<UsuarioApp>()
+    fun login(email: String, clave: String): Task<AuthResult> = auth.signInWithEmailAndPassword(email, clave)
+    fun registrar(email: String, clave: String): Task<AuthResult> = auth.createUserWithEmailAndPassword(email, clave)
+    fun recuperarClave(email: String): Task<Void> = auth.sendPasswordResetEmail(email)
+    fun logout() = auth.signOut()
+    fun usuarioActual() = auth.currentUser
 
-    fun obtenerUsuarios(): List<UsuarioApp> = listaUsuarios.toList()
-    fun obtenerSolicitudes(): List<UsuarioApp> = listaSolicitudes.toList()
+    private val dbRef = FirebaseDatabase.getInstance().getReference("usuarios_personal")
 
-    fun agregarUsuario(nombre: String, clave: String, rol: String) {
-        // Busca el ID máximo y suma 1. Si no hay, empieza en 1.
-        val nuevoId = (listaUsuarios.maxOfOrNull { it.id } ?: 0) + 1
-        listaUsuarios.add(UsuarioApp(nuevoId, nombre, clave, rol))
+    // Escuchar lista de personal
+    fun escucharUsuarios(onDatosCargados: (List<UsuarioApp>) -> Unit) {
+        dbRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val lista = mutableListOf<UsuarioApp>()
+                for (child in snapshot.children) {
+                    val u = child.getValue(UsuarioApp::class.java)
+                    u?.let { lista.add(it) }
+                }
+                onDatosCargados(lista)
+            }
+            override fun onCancelled(error: DatabaseError) {}
+        })
     }
 
-    fun eliminarUsuario(usuario: UsuarioApp) {
-        // Borramos buscando por ID para ser más precisos
-        listaUsuarios.removeAll { it.id == usuario.id }
+    fun agregarUsuarioDb(nombre: String, rol: String) {
+        val id = dbRef.push().key ?: return
+        val nuevo = UsuarioApp(id, nombre, rol)
+        dbRef.child(id).setValue(nuevo)
     }
 
-    fun validarLogin(usuario: String, contra: String): Boolean {
-        return listaUsuarios.any { it.nombre == usuario && it.clave == contra }
-    }
-
-    // --- MÉTODOS PARA SOLICITUDES ---
-
-    fun enviarSolicitud(nombre: String, clave: String) {
-        val tempId = (listaSolicitudes.minOfOrNull { it.id } ?: 0) - 1
-        listaSolicitudes.add(UsuarioApp(tempId, nombre, clave, "Solicitante"))
-    }
-
-    fun aprobarSolicitud(solicitud: UsuarioApp, rolAsignado: String) {
-        agregarUsuario(solicitud.nombre, solicitud.clave, rolAsignado)
-        listaSolicitudes.removeAll { it.id == solicitud.id }
-    }
-
-    fun rechazarSolicitud(solicitud: UsuarioApp) {
-        listaSolicitudes.removeAll { it.id == solicitud.id }
+    // Eliminar personal
+    fun eliminarUsuarioDb(id: String) {
+        dbRef.child(id).removeValue()
     }
 }

@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.estacionamientofacilapp.data.ResidenteApp
 import com.example.estacionamientofacilapp.data.ResidentesProvider
 import com.example.estacionamientofacilapp.utils.esPatenteValida
 
@@ -24,16 +25,20 @@ import com.example.estacionamientofacilapp.utils.esPatenteValida
 fun ResidentesScreen(navController: NavController) {
     val context = LocalContext.current
 
-    var listaResidentes by remember { mutableStateOf(ResidentesProvider.obtenerResidentes()) }
+    var listaResidentes by remember { mutableStateOf(emptyList<ResidenteApp>()) }
+
+    // CONEXIÓN A FIREBASE
+    DisposableEffect(Unit) {
+        ResidentesProvider.escucharResidentes { datos ->
+            listaResidentes = datos
+        }
+        onDispose { }
+    }
 
     // Campos del Formulario
     var nombre by remember { mutableStateOf("") }
     var patente by remember { mutableStateOf("") }
     var dpto by remember { mutableStateOf("") }
-
-    fun recargarLista() {
-        listaResidentes = ResidentesProvider.obtenerResidentes()
-    }
 
     Scaffold(
         containerColor = Color(0xFF2C3E50),
@@ -55,7 +60,7 @@ fun ResidentesScreen(navController: NavController) {
         ) {
             item {
                 Text("Base de Datos Residentes", fontSize = 26.sp, color = Color.White, fontWeight = FontWeight.Bold)
-                Text("Gestiona los vehículos autorizados", fontSize = 14.sp, color = Color.LightGray)
+                Text("Gestiona los vehículos (NUBE FIREBASE)", fontSize = 14.sp, color = Color.LightGray)
             }
 
             // --- FORMULARIO DE INGRESO ---
@@ -92,9 +97,8 @@ fun ResidentesScreen(navController: NavController) {
                                 if (nombre.isNotEmpty() && patente.isNotEmpty() && dpto.isNotEmpty()) {
                                     if (patente.esPatenteValida) {
                                         ResidentesProvider.agregarResidente(nombre, patente, dpto)
-                                        recargarLista()
                                         nombre = ""; patente = ""; dpto = ""
-                                        Toast.makeText(context, "Residente Guardado", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Guardando en Nube...", Toast.LENGTH_SHORT).show()
                                     } else {
                                         Toast.makeText(context, "Patente Inválida", Toast.LENGTH_SHORT).show()
                                     }
@@ -107,7 +111,7 @@ fun ResidentesScreen(navController: NavController) {
                         ) {
                             Icon(Icons.Default.Add, contentDescription = null)
                             Spacer(Modifier.width(8.dp))
-                            Text("AGREGAR A LA BASE")
+                            Text("AGREGAR A FIREBASE")
                         }
                     }
                 }
@@ -118,7 +122,7 @@ fun ResidentesScreen(navController: NavController) {
                 Text("Listado Oficial", fontSize = 20.sp, color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top=8.dp))
             }
 
-            items(listaResidentes, key = { it.id }) { residente ->
+            items(listaResidentes) { residente ->
                 Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF34495E))) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -131,8 +135,7 @@ fun ResidentesScreen(navController: NavController) {
                             Text("Dpto: ${residente.dpto}", color = Color.LightGray, fontSize = 14.sp)
                         }
                         IconButton(onClick = {
-                            ResidentesProvider.eliminarResidente(residente)
-                            recargarLista()
+                            ResidentesProvider.eliminarResidente(residente.id)
                         }) {
                             Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red)
                         }

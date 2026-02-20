@@ -6,45 +6,86 @@ ASIGNATURA: Desarrollo de Aplicaciones Móviles
 PARTE 1: IMPLEMENTACIÓN SEMANA 6 (ARQUITECTURA Y COMPONENTES)
 =========================================================================
 
-En esta entrega se aplicó una arquitectura modular separando la Lógica de Datos (Content Providers) de la Interfaz de Usuario (Fragments/Screens), cumpliendo con los contenidos de la semana.
+En esta entrega se aplicó una arquitectura modular separando la Lógica de Datos (Content Providers) de la Interfaz de Usuario (Fragments/Screens).
 
-1. CONTENT PROVIDERS (GESTIÓN DE DATOS):
-   Se implementaron objetos Singleton ("Providers") que actúan como gestores de datos centralizados, simulando la persistencia y lógica de negocio (CRUD):
+1. GESTORES DE DATOS (ARQUITECTURA MODERNA):
+   Se implementaron objetos Singleton que actúan como proveedores de datos centralizados:
    - Ubicación: com/example/estacionamientofacilapp/data/
-     * UsuariosProvider.kt: Gestiona autenticación, roles y flujo de aprobación de solicitudes.
-     * ResidentesProvider.kt: Gestiona la base de datos de propietarios y departamentos.
-     * VehiculosEspecialesProvider.kt: Gestiona permisos temporales (Ambulancias, Furgones, Proveedores).
+     * UsuariosProvider.kt: Gestión de usuarios y aprobaciones.
+     * ResidentesProvider.kt: Gestión de residentes.
+     * VehiculosEspecialesProvider.kt: Gestión de permisos temporales.
 
-2. FRAGMENTS / SCREENS (VISTAS MODULARES):
-   Se desarrollaron pantallas independientes y reutilizables para cada módulo de gestión:
+2. VISTAS MODULARES (SCREENS):
    - Ubicación: com/example/estacionamientofacilapp/ui/screens/
-     * UsuariosScreen.kt: Panel de administración para aprobar/rechazar solicitudes de acceso.
-     * ResidentesScreen.kt: ABM (Alta/Baja/Modificación) de residentes.
-     * VehiculosEspecialesScreen.kt: Interfaz dinámica con tarjetas y lógica visual (Iconos cambiantes).
-
-3. LÓGICA DE NEGOCIO AVANZADA:
-   - Flujo de Aprobación: El registro (RegisterScreen) no crea usuarios activos automáticamente, sino "Solicitudes". El Admin debe aprobarlas manualmente en UsuariosScreen.
-   - UI Dinámica: En "Vehículos Especiales", las tarjetas cambian de color e ícono automáticamente según el tipo de vehículo (Escolar/Proveedor/Emergencia).
+     * UsuariosScreen.kt, ResidentesScreen.kt, VehiculosEspecialesScreen.kt.
 
 =========================================================================
-PARTE 2: CORRECCIONES SUMATIVA ANTERIOR (KOTLIN AVANZADO)
+PARTE 2: MEJORA OPCIONAL SOLICITADA (CONTENT PROVIDER ESTÁNDAR)
 =========================================================================
 
-Se han incorporado las funcionalidades de Kotlin solicitadas en el feedback anterior.
-Para facilitar su revisión, se centralizaron en un archivo específico:
+Siguiendo la recomendación de mejora del docente, se implementó un CONTENT PROVIDER NATIVO DE ANDROID para cumplir con el estándar técnico clásico, coexistiendo con la arquitectura moderna.
 
+1. IMPLEMENTACIÓN:
+   - Clase: com/example/estacionamientofacilapp/data/EstacionaFacilProvider.kt
+   - Funcionalidad: Expone un cursor matricial (MatrixCursor) con un mensaje de estado del sistema.
+
+2. REGISTRO:
+   - Archivo: AndroidManifest.xml
+   - Authority: com.example.estacionamientofacilapp.provider
+
+3. VERIFICACIÓN (PRUEBA TÉCNICA):
+   - Al iniciar la pantalla de LOGIN, la app realiza una consulta real mediante URI ("content://...") al Provider.
+   - EVIDENCIA EN LOGCAT: Busque el tag "System.out" o el mensaje:
+     "ESTACIONAFACIL PROVIDER TEST: ContentProvider Nativo: OK"
+
+=========================================================================
+PARTE 3: CORRECCIONES SUMATIVA ANTERIOR (KOTLIN AVANZADO)
+=========================================================================
+
+Se mantienen las funcionalidades solicitadas en el feedback anterior:
 UBICACIÓN: com/example/estacionamientofacilapp/utils/FuncLambdasFaltantes.kt
 
-DETALLE DE IMPLEMENTACIÓN:
+1. PROPIEDAD DE EXTENSIÓN (val String.esPatenteValida):
+   - Uso: Validación de formato en ParkingListScreen.
 
-1. PROPIEDAD DE EXTENSIÓN:
-   - Código: val String.esPatenteValida
-   - Uso: Valida la longitud de la patente en el diálogo de ingreso (ParkingListScreen).
+2. FUNCIÓN INLINE PROPIA (inline fun ejecutarSeguro):
+   - Uso: Reemplazo de try-catch en ParkingCard.
 
-2. FUNCIÓN INLINE PROPIA:
-   - Código: inline fun ejecutarSeguro(...)
-   - Uso: Reemplaza los bloques try-catch repetitivos al formatear textos en las tarjetas (ParkingCard).
+3. LAMBDA CON ETIQUETA (validarCamposObligatorios):
+   - Uso: Control de flujo en formularios.
+=========================================================================
+PARTE 4: IMPLEMENTACIÓN SEMANA 7 (BACKEND CON FIREBASE)
+=========================================================================
 
-3. LAMBDA CON ETIQUETA (Labeled Lambda):
-   - Código: fun validarCamposObligatorios(...)
-   - Uso: Usa la etiqueta 'validacion@' para controlar el flujo al revisar campos vacíos.
+Para esta entrega se integró el framework Firebase de Google para gestionar
+la persistencia de datos en la nube y la autorización, cumpliendo con los
+requerimientos de la rúbrica (CRUD y Autenticación).
+
+1. AUTENTICACIÓN (FIREBASE AUTH):
+   Se implementó el acceso por Correo/Contraseña, reemplazando las validaciones locales.
+   - Archivo Lógico: data/UsuariosProvider.kt (Métodos: login, registrar, recuperarClave)
+   - Vistas Actualizadas:
+     * LoginScreen.kt (Validación real asíncrona)
+     * RegisterScreen.kt (Creación de cuentas en Firebase)
+     * RecoverPasswordScreen.kt (Envío de correo de recuperación real)
+
+2. BASE DE DATOS EN TIEMPO REAL (FIREBASE REALTIME DATABASE):
+   Se implementaron operaciones CRUD (Crear, Leer, Eliminar) con listeners
+   en tiempo real (ValueEventListener) para la gestión de datos.
+
+   A) Módulo de Residentes:
+      - Provider: data/ResidentesProvider.kt
+      - Vista: ui/screens/ResidentesScreen.kt (Escucha cambios vía DisposableEffect)
+
+   B) Módulo de Personal (Usuarios):
+      - Provider: data/UsuariosProvider.kt (Sección Database)
+      - Vista: ui/screens/UsuariosScreen.kt (Gestor de personal en la nube)
+
+   C) Módulo de Vehículos Especiales (Permisos):
+      - Provider: data/VehiculosEspecialesProvider.kt
+      - Vista: ui/screens/VehiculosEspecialesScreen.kt
+
+Nota: La aplicación es adaptativa y requiere conexión a internet para sincronizar
+los datos de los Providers con la consola de Firebase. La tabla principal de
+"Estacionados Actuales" se mantendrá en memoria temporal y será migrada a la
+base de datos en la entrega final.
