@@ -1,91 +1,60 @@
-PROYECTO: EstacionaFácil App
-ALUMNO: Felipe Guerrero Muñoz
-ASIGNATURA: Desarrollo de Aplicaciones Móviles
+# PROYECTO: EstacionaFácil App - Versión 3.0 (FINAL)
+**ALUMNO:** Felipe Guerrero Muñoz
+**ASIGNATURA:** Desarrollo de Aplicaciones Móviles
+**DOCENTE:** Pablo Vilches
 
 =========================================================================
-PARTE 1: IMPLEMENTACIÓN SEMANA 6 (ARQUITECTURA Y COMPONENTES)
+PARTE 1: IMPLEMENTACIÓN FINAL (SEMANA 8 - NUBE Y DISTRIBUCIÓN)
 =========================================================================
 
-En esta entrega se aplicó una arquitectura modular separando la Lógica de Datos (Content Providers) de la Interfaz de Usuario (Fragments/Screens).
+En esta fase final, la aplicación ha evolucionado de un prototipo local a una solución empresarial real integrada con servicios en la nube y hardware.
 
-1. GESTORES DE DATOS (ARQUITECTURA MODERNA):
-   Se implementaron objetos Singleton que actúan como proveedores de datos centralizados:
-   - Ubicación: com/example/estacionamientofacilapp/data/
-     * UsuariosProvider.kt: Gestión de usuarios y aprobaciones.
-     * ResidentesProvider.kt: Gestión de residentes.
-     * VehiculosEspecialesProvider.kt: Gestión de permisos temporales.
+1. BACKEND INTEGRADO (FIREBASE CLOUD):
+   - Firebase Auth: Autenticación real de usuarios (Login/Registro/Recuperación).
+   - Realtime Database: Sincronización en tiempo real de vehículos estacionados y base de datos de residentes.
+   - Firebase App Distribution: La aplicación está publicada para su descarga y pruebas.
 
-2. VISTAS MODULARES (SCREENS):
-   - Ubicación: com/example/estacionamientofacilapp/ui/screens/
-     * UsuariosScreen.kt, ResidentesScreen.kt, VehiculosEspecialesScreen.kt.
+2. INTEGRACIÓN DE HARDWARE (GPS & MAPS):
+   - Geolocalización: El Dashboard detecta las coordenadas del punto de control mediante el sensor GPS.
+   - Google Maps Intent: Comunicación entre apps para visualizar la ubicación del estacionamiento.
 
-=========================================================================
-PARTE 2: MEJORA OPCIONAL SOLICITADA (CONTENT PROVIDER ESTÁNDAR)
-=========================================================================
-
-Siguiendo la recomendación de mejora del docente, se implementó un CONTENT PROVIDER NATIVO DE ANDROID para cumplir con el estándar técnico clásico, coexistiendo con la arquitectura moderna.
-
-1. IMPLEMENTACIÓN:
-   - Clase: com/example/estacionamientofacilapp/data/EstacionaFacilProvider.kt
-   - Funcionalidad: Expone un cursor matricial (MatrixCursor) con un mensaje de estado del sistema.
-
-2. REGISTRO:
-   - Archivo: AndroidManifest.xml
-   - Authority: com.example.estacionamientofacilapp.provider
-
-3. VERIFICACIÓN (PRUEBA TÉCNICA):
-   - Al iniciar la pantalla de LOGIN, la app realiza una consulta real mediante URI ("content://...") al Provider.
-   - EVIDENCIA EN LOGCAT: Busque el tag "System.out" o el mensaje:
-     "ESTACIONAFACIL PROVIDER TEST: ContentProvider Nativo: OK"
+3. CALIDAD DE SOFTWARE (UNIT TESTING):
+   - Ubicación: app/src/test/java/com/example/estacionamientofacilapp/
+   - Implementación de JUnit para validar la lógica de formateo de patentes y modelos de datos.
 
 =========================================================================
-PARTE 3: CORRECCIONES SUMATIVA ANTERIOR (KOTLIN AVANZADO)
+PARTE 2: CREDENCIALES DE PRUEBA Y ACCESO
 =========================================================================
 
-Se mantienen las funcionalidades solicitadas en el feedback anterior:
-UBICACIÓN: com/example/estacionamientofacilapp/utils/FuncLambdasFaltantes.kt
+Para facilitar la corrección, utilice las siguientes credenciales (ya creadas en Firebase):
 
-1. PROPIEDAD DE EXTENSIÓN (val String.esPatenteValida):
-   - Uso: Validación de formato en ParkingListScreen.
+- CORREO: profe@duoc.cl
+- CONTRASEÑA: 123456
 
-2. FUNCIÓN INLINE PROPIA (inline fun ejecutarSeguro):
-   - Uso: Reemplazo de try-catch en ParkingCard.
+*Nota: También puede registrar un usuario nuevo desde la App; el sistema enviará los datos automáticamente a la consola de Firebase.*
 
-3. LAMBDA CON ETIQUETA (validarCamposObligatorios):
-   - Uso: Control de flujo en formularios.
 =========================================================================
-PARTE 4: IMPLEMENTACIÓN SEMANA 7 (BACKEND CON FIREBASE)
+PARTE 3: GUÍA DE REVISIÓN PARA LA RÚBRICA (DÓNDE BUSCAR)
 =========================================================================
 
-Para esta entrega se integró el framework Firebase de Google para gestionar
-la persistencia de datos en la nube y la autorización, cumpliendo con los
-requerimientos de la rúbrica (CRUD y Autenticación).
+Para validar los puntos exigidos en la rúbrica, consulte los siguientes archivos:
 
-1. AUTENTICACIÓN (FIREBASE AUTH):
-   Se implementó el acceso por Correo/Contraseña, reemplazando las validaciones locales.
-   - Archivo Lógico: data/UsuariosProvider.kt (Métodos: login, registrar, recuperarClave)
-   - Vistas Actualizadas:
-     * LoginScreen.kt (Validación real asíncrona)
-     * RegisterScreen.kt (Creación de cuentas en Firebase)
-     * RecoverPasswordScreen.kt (Envío de correo de recuperación real)
+1. KOTLIN AVANZADO (Lambdas, Filtros, Extensiones):
+   - Ubicación: com.example.estacionamientofacilapp.utils.FuncLambdasFaltantes.kt
+   - Ubicación: com.example.estacionamientofacilapp.ui.screens.ParkingListScreen.kt (Uso de .filter { })
 
-2. BASE DE DATOS EN TIEMPO REAL (FIREBASE REALTIME DATABASE):
-   Se implementaron operaciones CRUD (Crear, Leer, Eliminar) con listeners
-   en tiempo real (ValueEventListener) para la gestión de datos.
+2. MANEJO DE ESTADOS KTX Y FIREBASE:
+   - Ubicación: com.example.estacionamientofacilapp.data.ParkingProvider.kt (Escucha asíncrona de la DB).
 
-   A) Módulo de Residentes:
-      - Provider: data/ResidentesProvider.kt
-      - Vista: ui/screens/ResidentesScreen.kt (Escucha cambios vía DisposableEffect)
+3. PREPARACIÓN PARA PUBLICACIÓN (APK FIRMADO):
+   - El archivo ejecutable se encuentra en la carpeta: /Ejecutable/app-release.apk
+   - Se incluye el certificado Keystore en la documentación del informe técnico.
 
-   B) Módulo de Personal (Usuarios):
-      - Provider: data/UsuariosProvider.kt (Sección Database)
-      - Vista: ui/screens/UsuariosScreen.kt (Gestor de personal en la nube)
+=========================================================================
+PARTE 4: ESTRUCTURA DEL PROYECTO
+=========================================================================
 
-   C) Módulo de Vehículos Especiales (Permisos):
-      - Provider: data/VehiculosEspecialesProvider.kt
-      - Vista: ui/screens/VehiculosEspecialesScreen.kt
-
-Nota: La aplicación es adaptativa y requiere conexión a internet para sincronizar
-los datos de los Providers con la consola de Firebase. La tabla principal de
-"Estacionados Actuales" se mantendrá en memoria temporal y será migrada a la
-base de datos en la entrega final.
+- /ui/screens/: Interfaces de usuario en Jetpack Compose de alto contraste.
+- /data/: Proveedores de datos conectados a Firebase (CRUD).
+- /utils/: Funciones de extensión, formateadores y gestión de seguridad.
+- /navigation/: Sistema de rutas y NavHost de la aplicación.
